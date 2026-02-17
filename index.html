@@ -5,37 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Powermonkey Benchmark</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f4f4f4; }
-        h1 { text-align: center; color: #333; }
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f4f4f4; position: relative; }
+        h1 { text-align: center; color: #333; margin-top: 60px; }
+        #logo { position: absolute; top: 20px; left: 20px; max-width: 120px; z-index: 10; display: none; }
+        @media (min-width: 768px) { #logo { display: block; } }
         form { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        input, select, textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        input, select { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
         button { background: #9EBB4C; color: white; padding: 12px; border: none; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px; }
         button:hover { background: #8AA842; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
         details { margin: 10px 0; background: #f8f9fa; border-radius: 4px; padding: 10px; }
         summary { cursor: pointer; font-weight: bold; padding: 10px; background: #e9ecef; border-radius: 4px; }
         table { width: 100%; background: white; border-collapse: collapse; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background: #9EBB4C; color: white; }
         tr:hover { background: #f9f9f9; }
-        .success { display: none; background: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .success, .loading, .error { padding: 10px; border-radius: 4px; margin: 10px 0; text-align: center; }
+        .success { background: #d4edda; color: #155724; display: none; }
+        .loading { background: #fff3cd; color: #856404; display: none; }
+        .error { background: #f8d7da; color: #721c24; display: none; }
         .note { font-size: 0.9em; color: #666; font-style: italic; margin-top: 5px; }
+        .refresh-btn { background: #6c757d; margin-top: 10px; width: auto; padding: 8px 16px; }
     </style>
 </head>
 <body>
-    <h1>Powermonkey Benchmark</h1>
-    <p>Submit your benchmark results and compare them with other systems!</p>
-    <img src="data/logo_wbg.png" alt="logo" style="position: absolute; top: 5px; left: 5px; max-width: 120px; display: none;" id="logo">
-    <style>
-        @media (min-width: 768px) {
-            #logo { display: block !important; }
-        }
-    </style>
+    <img src="data:logo_wbg.png" alt="Powermonkey Logo" id="logo">
+    
+    <h1>Powermonkey Benchmark List</h1>
+    <p>Submit your benchmark results and see them appear automatically!</p>
 
-    <!-- Submission form: Netlify handles submissions automatically -->
-    <form name="benchmark-submit" method="POST" data-netlify="true" netlify-honeypot="bot-field">
-        <input type="hidden" name="form-name" value="benchmark-submit">
-        <input type="text" name="name" placeholder="Your Name/Nickname" required>
-        <input type="number" name="score" step="0.01" placeholder="Benchmark Score (higher is better)" required>
+    <form id="benchmark-form">
+        <input type="text" name="name" placeholder="Your Name/Nickname" required maxlength="50">
+        <input type="number" name="score" step="0.01" placeholder="Benchmark Score (higher is better)" required min="0">
         <select name="category" required>
             <option value="">Select Category</option>
             <option value="cpu">CPU</option>
@@ -44,11 +45,10 @@
             <option value="overall">Overall</option>
         </select>
 
-        <!-- Expandable hardware fields -->
-        <details>
-            <summary>Hardware Specs</summary>
-            <input type="text" name="cpu" placeholder="CPU (e.g., Intel i9-13900K)" />
-            <input type="text" name="gpu" placeholder="GPU (e.g., RTX 4090,  '/' for iGPU)" />
+        <details open>
+            <summary>Hardware Specs (click to expand/collapse)</summary>
+            <input type="text" name="cpu" placeholder="CPU (e.g., Intel i9-13900K)" maxlength="100">
+            <input type="text" name="gpu" placeholder="GPU (e.g., RTX 4090, '/' for iGPU)" maxlength="50">
             <select name="storage">
                 <option value="">Storage Type</option>
                 <option value="SSD">SSD</option>
@@ -62,7 +62,6 @@
                 <option value="3.11">3.11</option>
                 <option value="3.12">3.12</option>
                 <option value="3.13">3.13</option>
-                <option value="3.14">3.14</option>
                 <option value="Other">Other</option>
             </select>
             <select name="os">
@@ -74,49 +73,100 @@
             </select>
         </details>
 
-        <div style="display:none"><label>Bot field (ignore): <input name="bot-field"></label></div>
-        <button type="submit">Submit Result</button>
+        <button type="submit" id="submit-btn">Submit Result</button>
     </form>
 
-    <div id="message" class="success">Thank you! Your entry has been submitted and will appear in the leaderboard soon.</div>
+    <div id="message" class="success">✅ Success! Your entry has been added to the leaderboard.</div>
+    <div id="loading" class="loading">⏳ Loading leaderboard...</div>
+    <div id="error" class="error">❌ Failed to load leaderboard. Retrying...</div>
 
-    <!-- Static leaderboard example (can be made dynamic later with JS/DB) -->
-    <h2>Top Results</h2>
+    <h2>Top Results <span id="entry-count">0</span> | <button class="refresh-btn" onclick="loadLeaderboard()">Refresh</button></h2>
     <table>
         <thead>
-            <tr><th>Rank</th><th>Score</th><th>CPU</th><th>GPU</th><th>Storage</th><th>Category</th><th>OS</th><th>Python Version</th><th>User</th></tr>
+            <tr><th>Rank</th><th>Score</th><th>CPU</th><th>GPU</th><th>Storage</th><th>Category</th><th>OS</th><th>Python</th><th>User</th><th>Date</th></tr>
         </thead>
-        <tbody>
-            <tr>
-                <td>1</td>
-                <td>12500.50</td>
-                <td>Intel i9-13900K</td>
-                <td>RTX 4090</td>
-                <td>SSD</td>
-                <td>a1-cdg</td>
-                <td>Windows</td>
-                <td>3.12</td>
-                <td>joe</td>
-            </tr>
+        <tbody id="leaderboard-body">
+            <tr><td colspan="10">Loading leaderboard...</td></tr>
         </tbody>
     </table>
-    <p><em>Note: Leaderboard updated manually. For real-time updates: Add Firebase.</em></p>
 
     <script>
-        // AJAX form submission for better UX (optional, Netlify works without it)
-        let form = document.querySelector('form');
-        let message = document.getElementById('message');
+        const form = document.getElementById('benchmark-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const message = document.getElementById('message');
+        const loading = document.getElementById('loading');
+        const errorDiv = document.getElementById('error');
+        const tbody = document.getElementById('leaderboard-body');
+        const countSpan = document.getElementById('entry-count');
+
+        // Submit form to Netlify Function
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            let formData = new FormData(form);
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+            message.style.display = 'none';
+
             try {
-                await fetch('/', { method: 'POST', body: formData });
-                message.style.display = 'block';
-                form.reset();
+                const formData = new FormData(form);
+                const response = await fetch('/.netlify/functions/submit-benchmark', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    form.reset();
+                    message.style.display = 'block';
+                    loadLeaderboard(); // Auto-refresh after submit
+                } else {
+                    throw new Error('Submit failed');
+                }
             } catch (err) {
                 alert('Submission failed. Please try again.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Result';
             }
         });
+
+        // Load leaderboard from Netlify Function
+        async function loadLeaderboard() {
+            loading.style.display = 'block';
+            errorDiv.style.display = 'none';
+            tbody.innerHTML = '<tr><td colspan="10">Loading...</td></tr>';
+
+            try {
+                const response = await fetch('/.netlify/functions/get-leaderboard');
+                const data = await response.json();
+
+                // Sort by score DESC (database already does RANK())
+                tbody.innerHTML = data.map(row => `
+                    <tr>
+                        <td>${row.rank}</td>
+                        <td><strong>${parseFloat(row.score).toLocaleString()}</strong></td>
+                        <td>${row.cpu || '-'}</td>
+                        <td>${row.gpu || '-'}</td>
+                        <td>${row.storage || '-'}</td>
+                        <td>${row.category}</td>
+                        <td>${row.os || '-'}</td>
+                        <td>${row.pyversion || '-'}</td>
+                        <td>${row.name}</td>
+                        <td>${new Date(row.created_at).toLocaleDateString()}</td>
+                    </tr>
+                `).join('');
+
+                countSpan.textContent = data.length || 0;
+                loading.style.display = 'none';
+            } catch (err) {
+                console.error('Leaderboard error:', err);
+                tbody.innerHTML = '<tr><td colspan="10">Failed to load. Using demo data or check Functions.</td></tr>';
+                errorDiv.style.display = 'block';
+                loading.style.display = 'none';
+            }
+        }
+
+        // Initial load + auto-refresh every 30 seconds
+        loadLeaderboard();
+        setInterval(loadLeaderboard, 30000);
     </script>
 </body>
 </html>
