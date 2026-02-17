@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Powermonkey Benchmark</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f4f4f4; }
+        h1 { text-align: center; color: #333; }
+        form { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        input, select, textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { background: #9EBB4C; color: white; padding: 12px; border: none; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px; }
+        button:hover { background: #8AA842; }
+        details { margin: 10px 0; background: #f8f9fa; border-radius: 4px; padding: 10px; }
+        summary { cursor: pointer; font-weight: bold; padding: 10px; background: #e9ecef; border-radius: 4px; }
+        table { width: 100%; background: white; border-collapse: collapse; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #9EBB4C; color: white; }
+        tr:hover { background: #f9f9f9; }
+        .success { display: none; background: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .note { font-size: 0.9em; color: #666; font-style: italic; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Powermonkey Benchmark</h1>
+    <p>Submit your benchmark results and compare them with other systems!</p>
+    <img src="data/logo_wbg.png" alt="logo" style="position: absolute; top: 5px; left: 5px; max-width: 120px; display: none;" id="logo">
+    <style>
+        @media (min-width: 768px) {
+            #logo { display: block !important; }
+        }
+    </style>
+
+    <!-- Submission form: Netlify handles submissions automatically -->
+    <form name="benchmark-submit" method="POST" data-netlify="true" netlify-honeypot="bot-field">
+        <input type="hidden" name="form-name" value="benchmark-submit">
+        <input type="text" name="name" placeholder="Your Name/Nickname" required>
+        <input type="number" name="score" step="0.01" placeholder="Benchmark Score (higher is better)" required>
+        <select name="category" required>
+            <option value="">Select Category</option>
+            <option value="cpu">CPU</option>
+            <option value="gpu">GPU</option>
+            <option value="memory">RAM</option>
+            <option value="overall">Overall</option>
+        </select>
+
+        <!-- Expandable hardware fields -->
+        <details>
+            <summary>Hardware Specs</summary>
+            <input type="text" name="cpu" placeholder="CPU (e.g., Intel i9-13900K)" />
+            <input type="text" name="gpu" placeholder="GPU (e.g., RTX 4090,  '/' for iGPU)" />
+            <select name="storage">
+                <option value="">Storage Type</option>
+                <option value="SSD">SSD</option>
+                <option value="HDD">HDD</option>
+                <option value="Other">Other</option>
+            </select>
+            <select name="pyversion">
+                <option value="">Python Version</option>
+                <option value="3.9">3.9</option>
+                <option value="3.10">3.10</option>
+                <option value="3.11">3.11</option>
+                <option value="3.12">3.12</option>
+                <option value="3.13">3.13</option>
+                <option value="3.14">3.14</option>
+                <option value="Other">Other</option>
+            </select>
+            <select name="os">
+                <option value="">Operating System</option>
+                <option value="Windows">Windows</option>
+                <option value="macOS">macOS</option>
+                <option value="Linux">Linux</option>
+                <option value="Other">Other</option>
+            </select>
+        </details>
+
+        <div style="display:none"><label>Bot field (ignore): <input name="bot-field"></label></div>
+        <button type="submit">Submit Result</button>
+    </form>
+
+    <div id="message" class="success">Thank you! Your entry has been submitted and will appear in the leaderboard soon.</div>
+
+    <!-- Static leaderboard example (can be made dynamic later with JS/DB) -->
+    <h2>Top Results</h2>
+    <table>
+        <thead>
+            <tr><th>Rank</th><th>Score</th><th>CPU</th><th>GPU</th><th>Storage</th><th>Category</th><th>OS</th><th>Python Version</th><th>User</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td>12500.50</td>
+                <td>Intel i9-13900K</td>
+                <td>RTX 4090</td>
+                <td>SSD</td>
+                <td>a1-cdg</td>
+                <td>Windows</td>
+                <td>3.12</td>
+                <td>joe</td>
+            </tr>
+        </tbody>
+    </table>
+    <p><em>Note: Leaderboard updated manually. For real-time updates: Add Firebase.</em></p>
+
+    <script>
+        // AJAX form submission for better UX (optional, Netlify works without it)
+        let form = document.querySelector('form');
+        let message = document.getElementById('message');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            let formData = new FormData(form);
+            try {
+                await fetch('/', { method: 'POST', body: formData });
+                message.style.display = 'block';
+                form.reset();
+            } catch (err) {
+                alert('Submission failed. Please try again.');
+            }
+        });
+    </script>
+</body>
+</html>
