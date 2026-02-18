@@ -1,0 +1,9 @@
+{
+  "name": "powermonkey-functions",
+  "version": "1.0.0",
+  "description": "Netlify functions for Powermonkey benchmark",
+  "type": "module",
+  "dependencies": {
+    "@netlify/neon": "^0.1.0"
+  }
+}
