@@ -37,7 +37,7 @@
     <img src="data/logo_wbg.png" alt="Powermonkey Logo" id="logo">
     
     <h1>Powermonkey Benchmark List</h1>
-    <p>Submit your benchmark results and see them appear automatically!</p>
+    <p>how good is ur system?</p>
 
     <form id="benchmark-form">
         <input type="text" name="name" placeholder="Your Name/Nickname" required maxlength="50">
@@ -104,16 +104,16 @@
                 <th class="sort-header" onclick="sortTable('cpu')">CPU<span class="sort-indicator" id="cpu-indicator"></span></th>
                 <th class="sort-header" onclick="sortTable('gpu')">GPU<span class="sort-indicator" id="gpu-indicator"></span></th>
                 <th class="sort-header" onclick="sortTable('storage')">Storage<span class="sort-indicator" id="storage-indicator"></span></th>
-                <th class="sort-header" onclick="sortTable('category')">Kategorie<span class="sort-indicator" id="category-indicator"></span></th>
+                <th class="sort-header" onclick="sortTable('category')">Category<span class="sort-indicator" id="category-indicator"></span></th>
                 <th class="sort-header" onclick="sortTable('device')">Device<span class="sort-indicator" id="device-indicator"></span></th>
                 <th class="sort-header" onclick="sortTable('os')">OS<span class="sort-indicator" id="os-indicator"></span></th>
                 <th class="sort-header" onclick="sortTable('pyversion')">Python<span class="sort-indicator" id="pyversion-indicator"></span></th>
                 <th class="sort-header" onclick="sortTable('name')">User<span class="sort-indicator" id="name-indicator"></span></th>
-                <th class="sort-header" onclick="sortTable('created_at')">Datum<span class="sort-indicator" id="created_at-indicator"></span></th>
+                <th class="sort-header" onclick="sortTable('created_at')">Date<span class="sort-indicator" id="created_at-indicator"></span></th>
             </tr>
         </thead>
         <tbody id="leaderboard-body">
-            <tr><td colspan="11">Leaderboard wird geladen...</td></tr>
+            <tr><td colspan="11">loading...</td></tr>
         </tbody>
     </table>
 
@@ -163,7 +163,7 @@
         async function loadLeaderboard() {
             loading.style.display = 'block';
             errorDiv.style.display = 'none';
-            tbody.innerHTML = '<tr><td colspan="11">Lädt...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="11">Loading...</td></tr>';
 
             try {
                 const response = await fetch('/.netlify/functions/get-leaderboard?limit=1000');
