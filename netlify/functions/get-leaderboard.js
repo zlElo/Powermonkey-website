@@ -5,6 +5,7 @@ export default async function handler(req) {
     const sql = neon();
     const url = new URL(req.url);
     const category = url.searchParams.get('category') || 'all';
+    const limit = url.searchParams.get('limit') || '50';
     
     let results;
     if (category === 'all') {
@@ -12,7 +13,7 @@ export default async function handler(req) {
         SELECT *, RANK() OVER (ORDER BY score DESC) as rank
         FROM benchmarks 
         ORDER BY score DESC 
-        LIMIT 50
+        LIMIT ${parseInt(limit)}
       `;
     } else {
       results = await sql`
@@ -20,7 +21,7 @@ export default async function handler(req) {
         FROM benchmarks 
         WHERE category = ${category}
         ORDER BY score DESC 
-        LIMIT 50
+        LIMIT ${parseInt(limit)}
       `;
     }
     

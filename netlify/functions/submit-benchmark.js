@@ -13,10 +13,11 @@ export default async function handler(req) {
     const storage = formData.get('storage') || null;
     const pyversion = formData.get('pyversion') || null;
     const os = formData.get('os') || null;
+    const device = formData.get('device') || null;
     
     await sql`
-      INSERT INTO benchmarks (name, score, category, cpu, gpu, storage, pyversion, os)
-      VALUES (${name}, ${score}, ${category}, ${cpu}, ${gpu}, ${storage}, ${pyversion}, ${os})
+      INSERT INTO benchmarks (name, score, category, cpu, gpu, storage, pyversion, os, device)
+      VALUES (${name}, ${score}, ${category}, ${cpu}, ${gpu}, ${storage}, ${pyversion}, ${os}, ${device})
     `;
     
     return new Response(JSON.stringify({ success: true, message: 'Benchmark submitted successfully!' }), { 

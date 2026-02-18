@@ -16,6 +16,11 @@
         button:disabled { background: #ccc; cursor: not-allowed; }
         details { margin: 10px 0; background: #f8f9fa; border-radius: 4px; padding: 10px; }
         summary { cursor: pointer; font-weight: bold; padding: 10px; background: #e9ecef; border-radius: 4px; }
+        #search-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        #search-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+        .sort-header { cursor: pointer; user-select: none; }
+        .sort-header:hover { text-decoration: underline; }
+        .sort-indicator { font-size: 0.8em; margin-left: 4px; }
         table { width: 100%; background: white; border-collapse: collapse; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background: #9EBB4C; color: white; }
@@ -39,8 +44,9 @@
         <input type="number" name="score" step="0.01" placeholder="Benchmark Score (higher is better)" required min="0">
         <select name="category" required>
             <option value="">Select Category</option>
-            <option value="cpu">a1-cd</option>
-            <option value="gpu">a1-cdg</option>
+            <option value="a1-cd">a1-cd</option>
+            <option value="a1-cdg">a1-cdg</option>
+            <option value="Device">Device</option>
         </select>
 
         <details open>
@@ -69,6 +75,13 @@
                 <option value="Linux">Linux</option>
                 <option value="Other">Other</option>
             </select>
+            <select name="device">
+                <option value="">Device Type</option>
+                <option value="Laptop">Laptop</option>
+                <option value="Desktop">Desktop</option>
+                <option value="AIO-Pc">AIO-Pc</option>
+                <option value="Other">Other</option>
+            </select>
         </details>
 
         <button type="submit" id="submit-btn">Submit Result</button>
@@ -78,13 +91,29 @@
     <div id="loading" class="loading">⏳ Loading leaderboard...</div>
     <div id="error" class="error">❌ Failed to load leaderboard. Retrying...</div>
 
-    <h2>Top Results <span id="entry-count">0</span> | <button class="refresh-btn" onclick="loadLeaderboard()">Refresh</button></h2>
+    <div id="search-container">
+        <input type="text" id="search-input" placeholder="Suche nach Name, CPU, GPU, Kategorie...">
+    </div>
+
+    <h2>Ergebnisse <span id="entry-count">0</span> | <button class="refresh-btn" onclick="loadLeaderboard()">Aktualisieren</button></h2>
     <table>
         <thead>
-            <tr><th>Rank</th><th>Score</th><th>CPU</th><th>GPU</th><th>Storage</th><th>Category</th><th>OS</th><th>Python</th><th>User</th><th>Date</th></tr>
+            <tr>
+                <th class="sort-header" onclick="sortTable('rank')">Rang<span class="sort-indicator" id="rank-indicator"></span></th>
+                <th class="sort-header" onclick="sortTable('score')">Score<span class="sort-indicator" id="score-indicator">▼</span></th>
+                <th class="sort-header" onclick="sortTable('cpu')">CPU<span class="sort-indicator" id="cpu-indicator"></span></th>
+                <th class="sort-header" onclick="sortTable('gpu')">GPU<span class="sort-indicator" id="gpu-indicator"></span></th>
+                <th class="sort-header" onclick="sortTable('storage')">Storage<span class="sort-indicator" id="storage-indicator"></span></th>
+                <th class="sort-header" onclick="sortTable('category')">Kategorie<span class="sort-indicator" id="category-indicator"></span></th>
+                <th class="sort-header" onclick="sortTable('device')">Device<span class="sort-indicator" id="device-indicator"></span></th>
+                <th class="sort-header" onclick="sortTable('os')">OS<span class="sort-indicator" id="os-indicator"></span></th>
+                <th class="sort-header" onclick="sortTable('pyversion')">Python<span class="sort-indicator" id="pyversion-indicator"></span></th>
+                <th class="sort-header" onclick="sortTable('name')">User<span class="sort-indicator" id="name-indicator"></span></th>
+                <th class="sort-header" onclick="sortTable('created_at')">Datum<span class="sort-indicator" id="created_at-indicator"></span></th>
+            </tr>
         </thead>
         <tbody id="leaderboard-body">
-            <tr><td colspan="10">Loading leaderboard...</td></tr>
+            <tr><td colspan="11">Leaderboard wird geladen...</td></tr>
         </tbody>
     </table>
 
@@ -96,6 +125,10 @@
         const errorDiv = document.getElementById('error');
         const tbody = document.getElementById('leaderboard-body');
         const countSpan = document.getElementById('entry-count');
+        const searchInput = document.getElementById('search-input');
+        
+        let allData = [];
+        let currentSort = { column: 'score', direction: 'desc' };
 
         // Submit form to Netlify Function
         form.addEventListener('submit', async (e) => {
@@ -130,37 +163,106 @@
         async function loadLeaderboard() {
             loading.style.display = 'block';
             errorDiv.style.display = 'none';
-            tbody.innerHTML = '<tr><td colspan="10">Loading...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="11">Lädt...</td></tr>';
 
             try {
-                const response = await fetch('/.netlify/functions/get-leaderboard');
+                const response = await fetch('/.netlify/functions/get-leaderboard?limit=1000');
                 const data = await response.json();
-
-                // Sort by score DESC (database already does RANK())
-                tbody.innerHTML = data.map(row => `
-                    <tr>
-                        <td>${row.rank}</td>
-                        <td><strong>${parseFloat(row.score).toLocaleString()}</strong></td>
-                        <td>${row.cpu || '-'}</td>
-                        <td>${row.gpu || '-'}</td>
-                        <td>${row.storage || '-'}</td>
-                        <td>${row.category}</td>
-                        <td>${row.os || '-'}</td>
-                        <td>${row.pyversion || '-'}</td>
-                        <td>${row.name}</td>
-                        <td>${new Date(row.created_at).toLocaleDateString()}</td>
-                    </tr>
-                `).join('');
-
-                countSpan.textContent = data.length || 0;
+                allData = data;
+                renderTable(filterAndSortData());
                 loading.style.display = 'none';
             } catch (err) {
                 console.error('Leaderboard error:', err);
-                tbody.innerHTML = '<tr><td colspan="10">Failed to load. Using demo data or check Functions.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="11">Fehler beim Laden. Bitte versuchen Sie es später erneut.</td></tr>';
                 errorDiv.style.display = 'block';
                 loading.style.display = 'none';
             }
         }
+
+        // Filter data by search term and sort
+        function filterAndSortData() {
+            const searchTerm = searchInput.value.toLowerCase();
+            
+            let filtered = allData.filter(row => {
+                const searchText = [
+                    row.name, row.cpu, row.gpu, row.category, row.device,
+                    row.os, row.pyversion, row.storage
+                ].join(' ').toLowerCase();
+                return searchText.includes(searchTerm);
+            });
+
+            // Sort
+            filtered.sort((a, b) => {
+                let aVal = a[currentSort.column];
+                let bVal = b[currentSort.column];
+
+                if (currentSort.column === 'score' || currentSort.column === 'rank') {
+                    aVal = parseFloat(aVal) || 0;
+                    bVal = parseFloat(bVal) || 0;
+                    return currentSort.direction === 'asc' ? aVal - bVal : bVal - aVal;
+                } else if (currentSort.column === 'created_at') {
+                    aVal = new Date(aVal);
+                    bVal = new Date(bVal);
+                    return currentSort.direction === 'asc' ? aVal - bVal : bVal - aVal;
+                } else {
+                    aVal = String(aVal || '').toLowerCase();
+                    bVal = String(bVal || '').toLowerCase();
+                    return currentSort.direction === 'asc' 
+                        ? aVal.localeCompare(bVal) 
+                        : bVal.localeCompare(aVal);
+                }
+            });
+
+            return filtered;
+        }
+
+        // Render table with data
+        function renderTable(data) {
+            tbody.innerHTML = data.map(row => `
+                <tr>
+                    <td>${row.rank}</td>
+                    <td><strong>${parseFloat(row.score).toLocaleString()}</strong></td>
+                    <td>${row.cpu || '-'}</td>
+                    <td>${row.gpu || '-'}</td>
+                    <td>${row.storage || '-'}</td>
+                    <td>${row.category}</td>
+                    <td>${row.device || '-'}</td>
+                    <td>${row.os || '-'}</td>
+                    <td>${row.pyversion || '-'}</td>
+                    <td>${row.name}</td>
+                    <td>${new Date(row.created_at).toLocaleDateString()}</td>
+                </tr>
+            `).join('');
+
+            countSpan.textContent = data.length || 0;
+        }
+
+        // Sort table by column
+        function sortTable(column) {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = column === 'score' ? 'desc' : 'asc';
+            }
+            
+            updateSortIndicators();
+            renderTable(filterAndSortData());
+        }
+
+        // Update sort indicators in table header
+        function updateSortIndicators() {
+            document.querySelectorAll('.sort-indicator').forEach(el => el.textContent = '');
+            const indicator = document.getElementById(currentSort.column + '-indicator');
+            if (indicator) {
+                indicator.textContent = currentSort.direction === 'asc' ? '▲' : '▼';
+            }
+        }
+
+        // Search input listener
+        searchInput.addEventListener('input', () => {
+            renderTable(filterAndSortData());
+        });
 
         // Initial load + auto-refresh every 30 seconds
         loadLeaderboard();
