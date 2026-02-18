@@ -15,6 +15,7 @@ export default async function handler(req) {
         storage VARCHAR(20),
         pyversion VARCHAR(10),
         os VARCHAR(20),
+        device VARCHAR(50),
         created_at TIMESTAMP DEFAULT NOW()
       )
     `;
